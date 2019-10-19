@@ -1,0 +1,81 @@
+# 阿里云个人站集群部署-Mysql
+# 3节点Mysql-PXC部署
+version: '3'
+
+services:
+  # Mysql数据库节点1
+  mysql_node1:
+    image: pxc:latest
+    container_name: mysql_node1
+    privileged: true
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_node_1:/var/lib/mysql
+      - mysql_backup:/data
+    environment:
+      - MYSQL_ROOT_PASSWORD=abc123456
+      - CLUSTER_NAME=PXC
+      - XTRABACKUP_PASSWORD=abc123456
+    networks:
+      mysqlnet:
+        ipv4_address: 172.18.0.2
+  
+  # Mysql数据库节点2
+  # 需要等节点1初始化完再跑
+  mysql_node2:
+    image: pxc:latest
+    container_name: mysql_node2
+    privileged: true
+    restart: always
+    depends_on:
+      - mysql_node1
+    ports:
+      - 3307:3306
+    volumes:
+      - mysql_node_2:/var/lib/mysql
+      - mysql_backup:/data
+    environment:
+      - MYSQL_ROOT_PASSWORD=abc123456
+      - CLUSTER_NAME=PXC
+      - CLUSTER_JOIN=mysql_node1
+      - XTRABACKUP_PASSWORD=abc123456
+    networks:
+      mysqlnet:
+        ipv4_address: 172.18.0.3
+  
+  # Mysql数据库节点3
+  # 需要等节点1初始化完再跑
+  mysql_node3:
+    image: pxc:latest
+    container_name: mysql_node3
+    privileged: true
+    restart: always
+    depends_on:
+      - mysql_node1
+    ports:
+      - 3308:3306
+    volumes:
+      - mysql_node_3:/var/lib/mysql
+      - mysql_backup:/data
+    environment:
+      - MYSQL_ROOT_PASSWORD=abc123456
+      - CLUSTER_NAME=PXC
+      - CLUSTER_JOIN=mysql_node1
+      - XTRABACKUP_PASSWORD=abc123456
+    networks:
+      mysqlnet:
+        ipv4_address: 172.18.0.4
+
+volumes:
+  mysql_node_1:
+  mysql_node_2:
+  mysql_node_3:
+  mysql_backup:
+
+networks:
+  mysqlnet:
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
